@@ -7,40 +7,32 @@ if (isset($_SESSION['user_id'])) {
     exit;
 }
 
-$error = '';
-$success = '';
+$message = '';
+$is_sent = false;
 
-// Proses Login
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
+// Proses forgot password
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reset'])) {
     $email = trim($_POST['email']);
-    $password = trim($_POST['password']);
     
-    // Validasi input
-    if (empty($email) || empty($password)) {
-        $error = 'Email dan password harus diisi!';
+    if (empty($email)) {
+        $message = 'Email harus diisi!';
+    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $message = 'Format email tidak valid!';
     } else {
-        // Query cari user berdasarkan email
-        $query = "SELECT * FROM users WHERE email = ?";
+        // Cek apakah email terdaftar
+        $query = "SELECT id FROM users WHERE email = ?";
         $stmt = $koneksi->prepare($query);
         $stmt->bind_param("s", $email);
         $stmt->execute();
         $result = $stmt->get_result();
         
-        if ($result->num_rows === 1) {
-            $user = $result->fetch_assoc();
-            
-            // Verifikasi password
-            if (password_verify($password, $user['password'])) {
-                $_SESSION['user_id'] = $user['id'];
-                $_SESSION['email'] = $user['email'];
-                $_SESSION['nama'] = $user['nama'];
-                header("Location: dashboard.php");
-                exit;
-            } else {
-                $error = 'Password salah!';
-            }
+        if ($result->num_rows > 0) {
+            // Simulasi: dalam production, kirim email dengan reset link
+            // Untuk sekarang, arahkan ke login dengan pesan
+            $is_sent = true;
+            $message = 'Link reset password telah dikirim ke email Anda. Silakan cek inbox Anda.';
         } else {
-            $error = 'Email tidak ditemukan!';
+            $message = 'Email tidak ditemukan dalam sistem.';
         }
     }
 }
@@ -50,7 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - MySavings</title>
+    <title>Lupa Password - MySavings</title>
     <style>
         * {
             margin: 0;
@@ -68,7 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
             padding: 20px;
         }
 
-        .login-container {
+        .reset-container {
             background: white;
             border-radius: 20px;
             padding: 50px 40px;
@@ -77,15 +69,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
         }
 
-        .login-header {
+        .reset-header {
             text-align: center;
             margin-bottom: 40px;
         }
 
-        .login-header h1 {
-            font-size: 36px;
+        .reset-header h1 {
+            font-size: 32px;
             color: #333;
             font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .reset-header p {
+            color: #999;
+            font-size: 14px;
+            line-height: 1.6;
         }
 
         .form-group {
@@ -118,26 +117,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
             color: #CCC;
         }
 
-        .alert {
+        .message {
             padding: 12px 15px;
             border-radius: 8px;
             margin-bottom: 20px;
             font-size: 14px;
         }
 
-        .alert-error {
-            background-color: #FFE5E5;
-            color: #D32F2F;
-            border-left: 4px solid #D32F2F;
-        }
-
-        .alert-success {
+        .message-success {
             background-color: #E5F5E5;
             color: #388E3C;
             border-left: 4px solid #388E3C;
         }
 
-        .btn-login {
+        .message-error {
+            background-color: #FFE5E5;
+            color: #D32F2F;
+            border-left: 4px solid #D32F2F;
+        }
+
+        .btn-reset {
             width: 100%;
             padding: 14px;
             background: linear-gradient(90deg, #4A90E2 0%, #8B5CF6 100%);
@@ -148,75 +147,68 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
             font-weight: 600;
             cursor: pointer;
             transition: transform 0.2s ease, box-shadow 0.2s ease;
-            margin-top: 10px;
         }
 
-        .btn-login:hover {
+        .btn-reset:hover {
             transform: translateY(-2px);
             box-shadow: 0 5px 20px rgba(74, 144, 226, 0.4);
         }
 
-        .btn-login:active {
+        .btn-reset:active {
             transform: translateY(0);
         }
 
-        .login-footer {
+        .reset-footer {
             text-align: center;
             margin-top: 30px;
         }
 
-        .login-footer p {
+        .reset-footer p {
             font-size: 14px;
             color: #666;
-            margin-bottom: 10px;
         }
 
-        .login-footer a {
+        .reset-footer a {
             color: #4A90E2;
             text-decoration: none;
             font-weight: 600;
             transition: color 0.3s ease;
         }
 
-        .login-footer a:hover {
+        .reset-footer a:hover {
             color: #357ABD;
-        }
-
-        .divider {
-            color: #CCC;
-            margin: 0 5px;
         }
     </style>
 </head>
 <body>
-    <div class="login-container">
-        <div class="login-header">
-            <h1>Login</h1>
+    <div class="reset-container">
+        <div class="reset-header">
+            <h1>Lupa Password?</h1>
+            <p>Masukkan email Anda dan kami akan mengirimkan link untuk reset password.</p>
         </div>
 
-        <?php if (!empty($error)): ?>
-            <div class="alert alert-error"><?php echo htmlspecialchars($error); ?></div>
+        <?php if (!empty($message)): ?>
+            <div class="message <?php echo $is_sent ? 'message-success' : 'message-error'; ?>">
+                <?php echo htmlspecialchars($message); ?>
+            </div>
         <?php endif; ?>
 
-        <?php if (!empty($success)): ?>
-            <div class="alert alert-success"><?php echo htmlspecialchars($success); ?></div>
+        <?php if (!$is_sent): ?>
+            <form method="POST" action="">
+                <div class="form-group">
+                    <input type="email" name="email" placeholder="Email Anda" required>
+                </div>
+
+                <button type="submit" name="reset" class="btn-reset">Kirim Link Reset</button>
+            </form>
+        <?php else: ?>
+            <div style="text-align: center; padding: 20px 0;">
+                <p style="color: #666; margin-bottom: 20px;">Silakan kembali ke halaman login dan gunakan link yang telah kami kirimkan.</p>
+            </div>
         <?php endif; ?>
 
-        <form method="POST" action="">
-            <div class="form-group">
-                <input type="email" name="email" placeholder="Email" required>
-            </div>
-
-            <div class="form-group">
-                <input type="password" name="password" placeholder="Password" required>
-            </div>
-
-            <button type="submit" name="login" class="btn-login">Login</button>
-        </form>
-
-        <div class="login-footer">
-            <p><a href="forgot_password.php">Forgot Password?</a></p>
-            <p>Don't have an account? <a href="register.php">Sign up</a></p>
+        <div class="reset-footer">
+            <p><a href="login.php">← Kembali ke Login</a></p>
         </div>
     </div>
 </body>

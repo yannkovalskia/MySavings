@@ -10,37 +10,47 @@ if (isset($_SESSION['user_id'])) {
 $error = '';
 $success = '';
 
-// Proses Login
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
+// Proses Register
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register'])) {
+    $nama = trim($_POST['nama']);
     $email = trim($_POST['email']);
     $password = trim($_POST['password']);
+    $confirm_password = trim($_POST['confirm_password']);
     
     // Validasi input
-    if (empty($email) || empty($password)) {
-        $error = 'Email dan password harus diisi!';
+    if (empty($nama) || empty($email) || empty($password) || empty($confirm_password)) {
+        $error = 'Semua field harus diisi!';
+    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $error = 'Format email tidak valid!';
+    } elseif (strlen($password) < 6) {
+        $error = 'Password minimal 6 karakter!';
+    } elseif ($password !== $confirm_password) {
+        $error = 'Password dan konfirmasi password tidak sesuai!';
     } else {
-        // Query cari user berdasarkan email
-        $query = "SELECT * FROM users WHERE email = ?";
+        // Cek apakah email sudah terdaftar
+        $query = "SELECT id FROM users WHERE email = ?";
         $stmt = $koneksi->prepare($query);
         $stmt->bind_param("s", $email);
         $stmt->execute();
         $result = $stmt->get_result();
         
-        if ($result->num_rows === 1) {
-            $user = $result->fetch_assoc();
-            
-            // Verifikasi password
-            if (password_verify($password, $user['password'])) {
-                $_SESSION['user_id'] = $user['id'];
-                $_SESSION['email'] = $user['email'];
-                $_SESSION['nama'] = $user['nama'];
-                header("Location: dashboard.php");
-                exit;
-            } else {
-                $error = 'Password salah!';
-            }
+        if ($result->num_rows > 0) {
+            $error = 'Email sudah terdaftar!';
         } else {
-            $error = 'Email tidak ditemukan!';
+            // Hash password
+            $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+            
+            // Insert user baru
+            $query = "INSERT INTO users (nama, email, password) VALUES (?, ?, ?)";
+            $stmt = $koneksi->prepare($query);
+            $stmt->bind_param("sss", $nama, $email, $hashed_password);
+            
+            if ($stmt->execute()) {
+                $success = 'Registrasi berhasil! Silakan login dengan akun Anda.';
+                $_POST = []; // Clear form
+            } else {
+                $error = 'Terjadi kesalahan saat registrasi. Coba lagi!';
+            }
         }
     }
 }
@@ -50,7 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - MySavings</title>
+    <title>Register - MySavings</title>
     <style>
         * {
             margin: 0;
@@ -68,24 +78,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
             padding: 20px;
         }
 
-        .login-container {
+        .register-container {
             background: white;
             border-radius: 20px;
             padding: 50px 40px;
             width: 100%;
-            max-width: 420px;
+            max-width: 450px;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
         }
 
-        .login-header {
+        .register-header {
             text-align: center;
             margin-bottom: 40px;
         }
 
-        .login-header h1 {
+        .register-header h1 {
             font-size: 36px;
             color: #333;
             font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .register-header p {
+            color: #999;
+            font-size: 14px;
         }
 
         .form-group {
@@ -137,7 +153,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
             border-left: 4px solid #388E3C;
         }
 
-        .btn-login {
+        .btn-register {
             width: 100%;
             padding: 14px;
             background: linear-gradient(90deg, #4A90E2 0%, #8B5CF6 100%);
@@ -151,47 +167,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
             margin-top: 10px;
         }
 
-        .btn-login:hover {
+        .btn-register:hover {
             transform: translateY(-2px);
             box-shadow: 0 5px 20px rgba(74, 144, 226, 0.4);
         }
 
-        .btn-login:active {
+        .btn-register:active {
             transform: translateY(0);
         }
 
-        .login-footer {
+        .register-footer {
             text-align: center;
             margin-top: 30px;
         }
 
-        .login-footer p {
+        .register-footer p {
             font-size: 14px;
             color: #666;
-            margin-bottom: 10px;
         }
 
-        .login-footer a {
+        .register-footer a {
             color: #4A90E2;
             text-decoration: none;
             font-weight: 600;
             transition: color 0.3s ease;
         }
 
-        .login-footer a:hover {
+        .register-footer a:hover {
             color: #357ABD;
-        }
-
-        .divider {
-            color: #CCC;
-            margin: 0 5px;
         }
     </style>
 </head>
 <body>
-    <div class="login-container">
-        <div class="login-header">
-            <h1>Login</h1>
+    <div class="register-container">
+        <div class="register-header">
+            <h1>Sign Up</h1>
+            <p>Buat akun baru untuk memulai</p>
         </div>
 
         <?php if (!empty($error)): ?>
@@ -204,19 +215,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
 
         <form method="POST" action="">
             <div class="form-group">
-                <input type="email" name="email" placeholder="Email" required>
+                <input type="text" name="nama" placeholder="Nama Lengkap" required value="<?php echo isset($_POST['nama']) ? htmlspecialchars($_POST['nama']) : ''; ?>">
+            </div>
+
+            <div class="form-group">
+                <input type="email" name="email" placeholder="Email" required value="<?php echo isset($_POST['email']) ? htmlspecialchars($_POST['email']) : ''; ?>">
             </div>
 
             <div class="form-group">
                 <input type="password" name="password" placeholder="Password" required>
             </div>
 
-            <button type="submit" name="login" class="btn-login">Login</button>
+            <div class="form-group">
+                <input type="password" name="confirm_password" placeholder="Konfirmasi Password" required>
+            </div>
+
+            <button type="submit" name="register" class="btn-register">Create Account</button>
         </form>
 
-        <div class="login-footer">
-            <p><a href="forgot_password.php">Forgot Password?</a></p>
-            <p>Don't have an account? <a href="register.php">Sign up</a></p>
+        <div class="register-footer">
+            <p>Sudah punya akun? <a href="login.php">Login di sini</a></p>
         </div>
     </div>
 </body>
