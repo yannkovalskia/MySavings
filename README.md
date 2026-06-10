@@ -1,12 +1,12 @@
-# 📊 MySavings - Aplikasi Manajemen Keuangan Pribadi
+# MySavings - Aplikasi Manajemen Keuangan Pribadi
 
-## 📱 Deskripsi Proyek
+## Deskripsi Proyek
 
 **MySavings** adalah aplikasi web berbasis PHP yang dirancang untuk membantu pengguna mengelola keuangan pribadi mereka dengan mudah dan efisien. Aplikasi ini menyediakan fitur untuk mencatat transaksi, melihat riwayat keuangan, dan menganalisis pola pengeluaran/pemasukan.
 
 ---
 
-## ✨ Fitur yang Sudah Ada
+## Fitur yang Sudah Ada
 
 ### 1. **Authentication System** ✅
 - ✓ Login dengan email & password
@@ -90,7 +90,7 @@
 
 ---
 
-## 🔜 Fitur yang Akan Ditambah
+## Fitur yang Akan Ditambah
 
 ### Phase 2 (Enhancement)
 - [ ] **Settings/Profile Management**
@@ -128,7 +128,7 @@
   - Auto-generate transaksi otomatis
   - Reminder untuk recurring transaksi
 
-## 🚀 Tech Stack
+## Tech Stack
 
 ### Backend
 - **PHP 7.4+** dengan OOP & Prepared Statements
@@ -149,7 +149,7 @@
 
 ---
 
-## 📁 Struktur Folder
+## Struktur Folder
 
 ```
 MySavings/
@@ -169,7 +169,7 @@ MySavings/
 
 ---
 
-## 🗄️ Database Schema
+## Database Schema
 
 ### Table: users
 ```sql
@@ -198,16 +198,16 @@ CREATE TABLE transaksi (
 
 ---
 
-## 🔐 Fitur Keamanan
+## Fitur Keamanan
 
-✅ **Yang sudah diimplementasi:**
+ **Yang sudah diimplementasi:**
 - Password hashing dengan `password_hash()`
 - SQL injection prevention dengan Prepared Statements
 - Session validation di setiap halaman
 - XSS protection dengan `htmlspecialchars()`
 - CSRF token ready untuk diimplementasi
 
-🔜 **Yang akan ditambah:**
+ **Yang akan ditambah:**
 - Two-Factor Authentication (2FA)
 - Rate limiting pada login
 - Password strength validation
@@ -216,7 +216,7 @@ CREATE TABLE transaksi (
 
 ---
 
-## 💾 Setup & Installation
+## Setup & Installation
 
 ### Prerequisites
 - XAMPP atau Web Server dengan PHP 7.4+
@@ -273,33 +273,30 @@ CREATE TABLE transaksi (
 | Export PDF/Excel | 🔜 Planned | v2.0 |
 | Budget Management | 🔜 Planned | v2.0 |
 | Charts & Analytics | 🔜 Planned | v2.0 |
-| 2FA | 🔜 Planned | v3.0 |
-| API | 🔜 Planned | v3.0 |
-| Mobile App | 🔜 Planned | v4.0 |
 
 ---
 
-## 📝 Kategori Transaksi yang Tersedia
+## Kategori Transaksi yang Tersedia
 
 **Pengeluaran:**
-- 🍔 Makanan & Minuman
-- 🚗 Transportasi
-- 🛒 Belanja Bulanan
-- 🎬 Hiburan
-- 📋 Tagihan & Cicilan
-- 📈 Investasi
-- 🏥 Kesehatan
-- 📚 Pendidikan
-- 📌 Lainnya
+- Makanan & Minuman
+- Transportasi
+- Belanja Bulanan
+- Hiburan
+- Tagihan & Cicilan
+- Investasi
+- Kesehatan
+- Pendidikan
+- Lainnya
 
 **Pemasukan:**
-- 💰 Gaji Pokok
-- 🎁 Bonus
+- Gaji Pokok
+- Bonus
 - (Custom categories dapat ditambah di phase 2)
 
 ---
 
-## 🤝 Kontribusi
+## Kontribusi
 
 Fitur-fitur baru dapat diminta melalui:
 - Create issue di repository
@@ -307,19 +304,22 @@ Fitur-fitur baru dapat diminta melalui:
 
 ---
 
-## 📄 Lisensi
+## Lisensi
 
-Project ini dibuat untuk keperluan personal/educational.
+Project ini dibuat untuk keperluan edukasi
 
 ---
 
-## 👨‍💻 Author
-
+## Author
+**Nama:** [Ali]
+**Nama:** [Rayyan]
+**Nama:** [Umam]
+**Nama:** [Riko]
 **Created with ❤️ for better financial management**
 
 ---
 
-## 📞 Support
+## Support
 
 Untuk bantuan atau pertanyaan:
 - Hubungi developer
@@ -328,27 +328,16 @@ Untuk bantuan atau pertanyaan:
 
 ---
 
-## 🎯 Roadmap
+## Roadmap
 
 ### Q3 2026 (v1.0 - Current)
 - ✅ Core features (Auth, Dashboard, Transaction, Reports)
 
-### Q4 2026 (v2.0)
+### Q3 2026 (v2.0)
 - 🔄 Settings & Profile
 - 🔄 Edit/Delete functionality
 - 🔄 Export features (PDF/Excel)
 - 🔄 Real charts integration
-
-### Q1 2027 (v3.0)
-- 🔄 Security enhancements (2FA)
-- 🔄 API development
-- 🔄 Advanced analytics
-
-### Q2 2027 (v4.0)
-- 🔄 Mobile app launch
-- 🔄 Multi-currency support
-- 🔄 Collaboration features
-
 ---
 
 **Last Updated:** June 9, 2026  
