@@ -24,7 +24,34 @@ $kategori_list = [
     'Lainnya'
 ];
 
-// Proses tambah transaksi
+// Proses hapus transaksi
+if (isset($_GET['hapus'])) {
+    $transaksi_id = (int)$_GET['hapus'];
+    
+    // Verifikasi bahwa transaksi milik user
+    $query_check = "SELECT id FROM transaksi WHERE id = ? AND user_id = ?";
+    $stmt_check = $koneksi->prepare($query_check);
+    $stmt_check->bind_param("ii", $transaksi_id, $user_id);
+    $stmt_check->execute();
+    $result_check = $stmt_check->get_result();
+    
+    if ($result_check->num_rows === 1) {
+        $query_delete = "DELETE FROM transaksi WHERE id = ? AND user_id = ?";
+        $stmt_delete = $koneksi->prepare($query_delete);
+        $stmt_delete->bind_param("ii", $transaksi_id, $user_id);
+        
+        if ($stmt_delete->execute()) {
+            $success = 'Transaksi berhasil dihapus!';
+            header("Refresh: 1");
+        } else {
+            $error = 'Gagal menghapus transaksi!';
+        }
+    } else {
+        $error = 'Transaksi tidak ditemukan!';
+    }
+}
+
+// Proses tambah atau update transaksi
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['simpan_transaksi'])) {
     $jenis = trim($_POST['jenis']);
     $judul = trim($_POST['judul']);
@@ -32,6 +59,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['simpan_transaksi'])) 
     $kategori = trim($_POST['kategori']);
     $tanggal = trim($_POST['tanggal']);
     $catatan = trim($_POST['catatan']);
+    $transaksi_id = isset($_POST['transaksi_id']) ? (int)$_POST['transaksi_id'] : 0;
     
     // Validasi
     if (empty($judul) || empty($jumlah) || empty($kategori) || empty($tanggal)) {
@@ -39,18 +67,59 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['simpan_transaksi'])) 
     } elseif (!is_numeric($jumlah) || $jumlah <= 0) {
         $error = 'Jumlah harus berupa angka positif!';
     } else {
-        // Insert transaksi
-        $query = "INSERT INTO transaksi (user_id, jenis, jumlah, keterangan, kategori, tanggal) 
-                  VALUES (?, ?, ?, ?, ?, ?)";
-        $stmt = $koneksi->prepare($query);
-        $stmt->bind_param("isdsss", $user_id, $jenis, $jumlah, $judul, $kategori, $tanggal);
-        
-        if ($stmt->execute()) {
-            $success = 'Transaksi berhasil dicatat!';
-            $_POST = [];
+        if ($transaksi_id > 0) {
+            // Update transaksi
+            // Verifikasi bahwa transaksi milik user
+            $query_check = "SELECT id FROM transaksi WHERE id = ? AND user_id = ?";
+            $stmt_check = $koneksi->prepare($query_check);
+            $stmt_check->bind_param("ii", $transaksi_id, $user_id);
+            $stmt_check->execute();
+            $result_check = $stmt_check->get_result();
+            
+            if ($result_check->num_rows === 1) {
+                $query = "UPDATE transaksi SET jenis = ?, jumlah = ?, keterangan = ?, kategori = ?, tanggal = ?, catatan = ? WHERE id = ? AND user_id = ?";
+                $stmt = $koneksi->prepare($query);
+                $stmt->bind_param("sdssssii", $jenis, $jumlah, $judul, $kategori, $tanggal, $catatan, $transaksi_id, $user_id);
+                
+                if ($stmt->execute()) {
+                    $success = 'Transaksi berhasil diperbarui!';
+                    $_POST = [];
+                    $transaksi_id = 0;
+                } else {
+                    $error = 'Terjadi kesalahan saat update transaksi!';
+                }
+            } else {
+                $error = 'Transaksi tidak ditemukan atau bukan milik Anda!';
+            }
         } else {
-            $error = 'Terjadi kesalahan saat menyimpan transaksi!';
+            // Insert transaksi baru
+            $query = "INSERT INTO transaksi (user_id, jenis, jumlah, keterangan, kategori, tanggal, catatan) 
+                      VALUES (?, ?, ?, ?, ?, ?, ?)";
+            $stmt = $koneksi->prepare($query);
+            $stmt->bind_param("isdssss", $user_id, $jenis, $jumlah, $judul, $kategori, $tanggal, $catatan);
+            
+            if ($stmt->execute()) {
+                $success = 'Transaksi berhasil dicatat!';
+                $_POST = [];
+            } else {
+                $error = 'Terjadi kesalahan saat menyimpan transaksi!';
+            }
         }
+    }
+}
+
+// Jika ada parameter edit, ambil data transaksi
+$edit_transaksi = null;
+if (isset($_GET['edit'])) {
+    $edit_id = (int)$_GET['edit'];
+    $query = "SELECT * FROM transaksi WHERE id = ? AND user_id = ?";
+    $stmt = $koneksi->prepare($query);
+    $stmt->bind_param("ii", $edit_id, $user_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    if ($result->num_rows === 1) {
+        $edit_transaksi = $result->fetch_assoc();
     }
 }
 
@@ -661,21 +730,29 @@ function getKategoriIcon($kategori) {
                     <?php endif; ?>
 
                     <div class="tabs">
-                        <button class="tab-btn active expense" onclick="setJenis('pengeluaran')">Pengeluaran</button>
-                        <button class="tab-btn income" onclick="setJenis('pemasukan')">Pemasukan</button>
+                        <button class="tab-btn <?php echo (!$edit_transaksi || $edit_transaksi['jenis'] === 'pengeluaran') ? 'active expense' : 'expense'; ?>" onclick="setJenis('pengeluaran')">Pengeluaran</button>
+                        <button class="tab-btn <?php echo ($edit_transaksi && $edit_transaksi['jenis'] === 'pemasukan') ? 'active income' : 'income'; ?>" onclick="setJenis('pemasukan')">Pemasukan</button>
                     </div>
 
                     <form method="POST" action="">
-                        <input type="hidden" name="jenis" id="jenis" value="pengeluaran">
+                        <?php if ($edit_transaksi): ?>
+                            <input type="hidden" name="transaksi_id" value="<?php echo $edit_transaksi['id']; ?>">
+                            <div style="padding: 12px; background-color: #FFF9E5; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #FF9800;">
+                                <p style="color: #E65100; font-size: 14px; font-weight: 600; margin: 0;">Mode Edit Transaksi</p>
+                                <a href="transaksi.php" style="color: #FF9800; font-size: 12px; text-decoration: none;">← Kembali ke form baru</a>
+                            </div>
+                        <?php endif; ?>
+                        
+                        <input type="hidden" name="jenis" id="jenis" value="<?php echo $edit_transaksi ? $edit_transaksi['jenis'] : 'pengeluaran'; ?>">
 
                         <div class="form-group">
                             <label>Judul Transaksi</label>
-                            <input type="text" name="judul" placeholder="Contoh: Belanja Bulanan" required value="<?php echo isset($_POST['judul']) ? htmlspecialchars($_POST['judul']) : ''; ?>">
+                            <input type="text" name="judul" placeholder="Contoh: Belanja Bulanan" required value="<?php echo $edit_transaksi ? htmlspecialchars($edit_transaksi['keterangan']) : (isset($_POST['judul']) ? htmlspecialchars($_POST['judul']) : ''); ?>">
                         </div>
 
                         <div class="form-group">
                             <label>Jumlah (Nominal)</label>
-                            <input type="text" name="jumlah" id="jumlah" placeholder="Rp 0" required value="<?php echo isset($_POST['jumlah']) ? htmlspecialchars($_POST['jumlah']) : ''; ?>" inputmode="numeric">
+                            <input type="text" name="jumlah" id="jumlah" placeholder="Rp 0" required value="<?php echo $edit_transaksi ? number_format($edit_transaksi['jumlah'], 0, ',', '.') : (isset($_POST['jumlah']) ? htmlspecialchars($_POST['jumlah']) : ''); ?>" inputmode="numeric">
                         </div>
 
                         <div class="form-row">
@@ -684,7 +761,8 @@ function getKategoriIcon($kategori) {
                                 <select name="kategori" required>
                                     <option value="">Pilih Kategori</option>
                                     <?php foreach ($kategori_list as $kat): ?>
-                                        <option value="<?php echo $kat; ?>" <?php echo (isset($_POST['kategori']) && $_POST['kategori'] === $kat) ? 'selected' : ''; ?>>
+                                        <?php $selected = ($edit_transaksi && $edit_transaksi['kategori'] === $kat) || (isset($_POST['kategori']) && $_POST['kategori'] === $kat); ?>
+                                        <option value="<?php echo $kat; ?>" <?php echo $selected ? 'selected' : ''; ?>>
                                             <?php echo $kat; ?>
                                         </option>
                                     <?php endforeach; ?>
@@ -693,16 +771,16 @@ function getKategoriIcon($kategori) {
 
                             <div class="form-group">
                                 <label>Tanggal</label>
-                                <input type="date" name="tanggal" required value="<?php echo isset($_POST['tanggal']) ? $_POST['tanggal'] : date('Y-m-d'); ?>">
+                                <input type="date" name="tanggal" required value="<?php echo $edit_transaksi ? $edit_transaksi['tanggal'] : (isset($_POST['tanggal']) ? $_POST['tanggal'] : date('Y-m-d')); ?>">
                             </div>
                         </div>
 
                         <div class="form-group">
                             <label>Catatan (Opsional)</label>
-                            <textarea name="catatan" placeholder="Tambahkan deskripsi detail..."><?php echo isset($_POST['catatan']) ? htmlspecialchars($_POST['catatan']) : ''; ?></textarea>
+                            <textarea name="catatan" placeholder="Tambahkan deskripsi detail..."><?php echo $edit_transaksi ? htmlspecialchars($edit_transaksi['catatan'] ?? '') : (isset($_POST['catatan']) ? htmlspecialchars($_POST['catatan']) : ''); ?></textarea>
                         </div>
 
-                        <button type="submit" name="simpan_transaksi" class="btn-submit">Simpan Transaksi</button>
+                        <button type="submit" name="simpan_transaksi" class="btn-submit"><?php echo $edit_transaksi ? 'Update Transaksi' : 'Simpan Transaksi'; ?></button>
                     </form>
                 </div>
 
@@ -733,6 +811,10 @@ function getKategoriIcon($kategori) {
                                     </div>
                                     <div class="transaction-card-amount <?php echo $trans['jenis']; ?>">
                                         <?php echo ($trans['jenis'] === 'pemasukan' ? '+' : '-') . ' ' . formatCurrency($trans['jumlah']); ?>
+                                    </div>
+                                    <div style="display: flex; gap: 5px; margin-left: 10px;">
+                                        <a href="transaksi.php?edit=<?php echo $trans['id']; ?>" style="padding: 4px 8px; background: #E3F2FD; color: #1976D2; border-radius: 4px; text-decoration: none; font-size: 11px; font-weight: 600; cursor: pointer; border: none;">Edit</a>
+                                        <button onclick="if(confirm('Yakin hapus transaksi ini?')) window.location.href='transaksi.php?hapus=<?php echo $trans['id']; ?>';" style="padding: 4px 8px; background: #FFEBEE; color: #C62828; border-radius: 4px; text-decoration: none; font-size: 11px; font-weight: 600; cursor: pointer; border: none;">Hapus</button>
                                     </div>
                                 </div>
                             <?php endwhile; ?>

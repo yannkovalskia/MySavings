@@ -9,6 +9,29 @@ if (!isset($_SESSION['user_id'])) {
 
 $user_id = $_SESSION['user_id'];
 
+// Proses hapus transaksi
+$success_message = '';
+if (isset($_GET['hapus'])) {
+    $transaksi_id = (int)$_GET['hapus'];
+    
+    // Verifikasi bahwa transaksi milik user
+    $query_check = "SELECT id FROM transaksi WHERE id = ? AND user_id = ?";
+    $stmt_check = $koneksi->prepare($query_check);
+    $stmt_check->bind_param("ii", $transaksi_id, $user_id);
+    $stmt_check->execute();
+    $result_check = $stmt_check->get_result();
+    
+    if ($result_check->num_rows === 1) {
+        $query_delete = "DELETE FROM transaksi WHERE id = ? AND user_id = ?";
+        $stmt_delete = $koneksi->prepare($query_delete);
+        $stmt_delete->bind_param("ii", $transaksi_id, $user_id);
+        
+        if ($stmt_delete->execute()) {
+            $success_message = 'Transaksi berhasil dihapus!';
+        }
+    }
+}
+
 // Filter period
 $period = $_GET['period'] ?? 'bulan_ini';
 $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
@@ -707,6 +730,12 @@ function getPeriodLabel($period) {
 
             <!-- Table Section -->
             <div class="table-section">
+                <?php if (!empty($success_message)): ?>
+                    <div style="padding: 15px; background-color: #E5F5E5; color: #388E3C; border-left: 4px solid #388E3C; border-radius: 8px; margin-bottom: 20px; font-weight: 600;">
+                        ✓ <?php echo htmlspecialchars($success_message); ?>
+                    </div>
+                <?php endif; ?>
+                
                 <div class="table-header">
                     <h2 class="table-title">Daftar Transaksi Terbaru</h2>
                     <div class="table-actions">
@@ -723,6 +752,7 @@ function getPeriodLabel($period) {
                                 <th>Kategori</th>
                                 <th>Keterangan</th>
                                 <th style="text-align: right;">Jumlah</th>
+                                <th style="text-align: center;">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -742,6 +772,12 @@ function getPeriodLabel($period) {
                                     </td>
                                     <td class="table-amount <?php echo $trans['jenis']; ?>">
                                         <?php echo ($trans['jenis'] === 'pemasukan' ? '+' : '-') . ' ' . formatCurrency($trans['jumlah']); ?>
+                                    </td>
+                                    <td style="text-align: center;">
+                                        <div style="display: flex; gap: 8px; justify-content: center;">
+                                            <a href="transaksi.php?edit=<?php echo $trans['id']; ?>" style="padding: 6px 12px; background: #E3F2FD; color: #1976D2; border-radius: 4px; text-decoration: none; font-size: 12px; font-weight: 600;">Edit</a>
+                                            <button onclick="if(confirm('Yakin hapus transaksi ini? Data akan hilang permanen.')) window.location.href='riwayat_transaksi.php?hapus=<?php echo $trans['id']; ?>&period=<?php echo $period; ?>&page=<?php echo $page; ?>';" style="padding: 6px 12px; background: #FFEBEE; color: #C62828; border-radius: 4px; text-decoration: none; font-size: 12px; font-weight: 600; border: none; cursor: pointer;">Hapus</button>
+                                        </div>
                                     </td>
                                 </tr>
                             <?php endwhile; ?>
