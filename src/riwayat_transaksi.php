@@ -652,12 +652,12 @@ function getPeriodLabel($period) {
                     </svg>
                     Reports
                 </a>
-                <a href="#settings" class="menu-item">
+                <a href="profil.php" class="menu-item">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="3"></circle>
-                        <path d="M12 1v6m0 6v6M4.22 4.22l4.24 4.24m3.08 3.08l4.24 4.24M1 12h6m6 0h6m-1.78-7.22l-4.24 4.24m-3.08 3.08l-4.24 4.24"></path>
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
                     </svg>
-                    Settings
+                    Profil
                 </a>
             </div>
 
