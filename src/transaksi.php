@@ -58,7 +58,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['simpan_transaksi'])) 
     $jumlah = str_replace('.', '', str_replace(',', '.', trim($_POST['jumlah'])));
     $kategori = trim($_POST['kategori']);
     $tanggal = trim($_POST['tanggal']);
-    $catatan = trim($_POST['catatan']);
     $transaksi_id = isset($_POST['transaksi_id']) ? (int)$_POST['transaksi_id'] : 0;
     
     // Validasi
@@ -77,9 +76,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['simpan_transaksi'])) 
             $result_check = $stmt_check->get_result();
             
             if ($result_check->num_rows === 1) {
-                $query = "UPDATE transaksi SET jenis = ?, jumlah = ?, keterangan = ?, kategori = ?, tanggal = ?, catatan = ? WHERE id = ? AND user_id = ?";
+                $query = "UPDATE transaksi SET jenis = ?, jumlah = ?, keterangan = ?, kategori = ?, tanggal = ? WHERE id = ? AND user_id = ?";
                 $stmt = $koneksi->prepare($query);
-                $stmt->bind_param("sdssssii", $jenis, $jumlah, $judul, $kategori, $tanggal, $catatan, $transaksi_id, $user_id);
+                $stmt->bind_param("sdssii", $jenis, $jumlah, $judul, $kategori, $tanggal, $transaksi_id, $user_id);
                 
                 if ($stmt->execute()) {
                     $success = 'Transaksi berhasil diperbarui!';
@@ -93,10 +92,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['simpan_transaksi'])) 
             }
         } else {
             // Insert transaksi baru
-            $query = "INSERT INTO transaksi (user_id, jenis, jumlah, keterangan, kategori, tanggal, catatan) 
-                      VALUES (?, ?, ?, ?, ?, ?, ?)";
+            $query = "INSERT INTO transaksi (user_id, jenis, jumlah, keterangan, kategori, tanggal) 
+                      VALUES (?, ?, ?, ?, ?, ?)";
             $stmt = $koneksi->prepare($query);
-            $stmt->bind_param("isdssss", $user_id, $jenis, $jumlah, $judul, $kategori, $tanggal, $catatan);
+            $stmt->bind_param("isdsss", $user_id, $jenis, $jumlah, $judul, $kategori, $tanggal);
             
             if ($stmt->execute()) {
                 $success = 'Transaksi berhasil dicatat!';
@@ -678,7 +677,7 @@ function getKategoriIcon($kategori) {
             <div class="menu-divider"></div>
 
             <div class="menu-section">
-                <a href="#help" class="menu-item">
+                <a href="help.php" class="menu-item">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="12" cy="12" r="10"></circle>
                         <path d="M12 16v-4m0-4h.01"></path>
@@ -775,10 +774,6 @@ function getKategoriIcon($kategori) {
                             </div>
                         </div>
 
-                        <div class="form-group">
-                            <label>Catatan (Opsional)</label>
-                            <textarea name="catatan" placeholder="Tambahkan deskripsi detail..."><?php echo $edit_transaksi ? htmlspecialchars($edit_transaksi['catatan'] ?? '') : (isset($_POST['catatan']) ? htmlspecialchars($_POST['catatan']) : ''); ?></textarea>
-                        </div>
 
                         <button type="submit" name="simpan_transaksi" class="btn-submit"><?php echo $edit_transaksi ? 'Update Transaksi' : 'Simpan Transaksi'; ?></button>
                     </form>

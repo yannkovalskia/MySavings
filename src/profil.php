@@ -396,31 +396,24 @@ function getInitials($nama) {
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <rect x="3" y="3" width="7" height="7"></rect>
                         <rect x="14" y="3" width="7" height="7"></rect>
-                        <rect x="3" y="14" width="7" height="7"></rect>
                         <rect x="14" y="14" width="7" height="7"></rect>
+                        <rect x="3" y="14" width="7" height="7"></rect>
                     </svg>
                     Dashboard
                 </a>
                 <a href="transaksi.php" class="menu-item">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                    </svg>
-                    Transaksi
-                </a>
-                <a href="riwayat_transaksi.php" class="menu-item">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
                         <polyline points="9 22 9 12 15 12 15 22"></polyline>
                     </svg>
-                    Riwayat
+                    Transactions
                 </a>
                 <a href="laporan_keuangan.php" class="menu-item">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="12" y1="2" x2="12" y2="22"></line>
-                        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <polyline points="5 12 12 19 19 12"></polyline>
                     </svg>
-                    Laporan
+                    Reports
                 </a>
                 <a href="profil.php" class="menu-item active">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -434,7 +427,7 @@ function getInitials($nama) {
             <div class="menu-divider"></div>
 
             <div class="menu-section">
-                <a href="#help" class="menu-item">
+                <a href="help.php" class="menu-item">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="12" cy="12" r="10"></circle>
                         <path d="M12 16v-4m0-4h.01"></path>
