@@ -53,6 +53,18 @@ $stmt->bind_param("i", $user_id);
 $stmt->execute();
 $result_chart = $stmt->get_result();
 
+// Format data untuk Chart.js - 6 bulan trend
+$chart_data_6bulan = [];
+while ($row = $result_chart->fetch_assoc()) {
+    $bulan = $row['bulan'];
+    if (!isset($chart_data_6bulan[$bulan])) {
+        $chart_data_6bulan[$bulan] = ['pemasukan' => 0, 'pengeluaran' => 0];
+    }
+    $chart_data_6bulan[$bulan][$row['jenis']] = (float)$row['total'];
+}
+ksort($chart_data_6bulan);
+$json_chart_6bulan = json_encode($chart_data_6bulan);
+
 function formatCurrency($value) {
     return 'Rp ' . number_format(abs($value), 0, ',', '.');
 }
@@ -400,6 +412,7 @@ function getKategoriIcon($kategori) {
             }
         }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
 </head>
 <body>
     <div class="container">
@@ -489,8 +502,8 @@ function getKategoriIcon($kategori) {
             <div class="report-section">
                 <h2 class="section-title">Trend 6 Bulan Terakhir</h2>
                 <p class="section-subtitle">Perbandingan pemasukan dan pengeluaran dari bulan-bulan sebelumnya</p>
-                <div class="chart-placeholder">
-                    📊 Chart trend bulanan akan ditampilkan di sini (gunakan Chart.js atau Apex Charts)
+                <div style="position: relative; height: 350px;">
+                    <canvas id="chartTrend6Bulan"></canvas>
                 </div>
             </div>
 
@@ -527,5 +540,126 @@ function getKategoriIcon($kategori) {
             </div>
         </div>
     </div>
+
+    <script>
+        // Chart Trend 6 Bulan Terakhir
+        const chartData6Bulan = <?php echo $json_chart_6bulan; ?>;
+        
+        if (Object.keys(chartData6Bulan).length > 0) {
+            const labels = Object.keys(chartData6Bulan).map(bulan => {
+                const [tahun, bulanNum] = bulan.split('-');
+                const date = new Date(tahun, parseInt(bulanNum) - 1);
+                return date.toLocaleDateString('id-ID', { month: 'short', year: '2-digit' });
+            });
+            
+            const dataPemasukan = Object.values(chartData6Bulan).map(item => item.pemasukan);
+            const dataPengeluaran = Object.values(chartData6Bulan).map(item => item.pengeluaran);
+            
+            const ctx = document.getElementById('chartTrend6Bulan').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Pemasukan (Rp)',
+                            data: dataPemasukan,
+                            borderColor: '#00D4AA',
+                            backgroundColor: 'rgba(0, 212, 170, 0.1)',
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.4,
+                            pointBackgroundColor: '#00D4AA',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2,
+                            pointRadius: 5,
+                            pointHoverRadius: 7,
+                            pointHoverBackgroundColor: '#00D4AA',
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Pengeluaran (Rp)',
+                            data: dataPengeluaran,
+                            borderColor: '#FF6B6B',
+                            backgroundColor: 'rgba(255, 107, 107, 0.1)',
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.4,
+                            pointBackgroundColor: '#FF6B6B',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2,
+                            pointRadius: 5,
+                            pointHoverRadius: 7,
+                            pointHoverBackgroundColor: '#FF6B6B',
+                            yAxisID: 'y'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                usePointStyle: true,
+                                padding: 20,
+                                font: {
+                                    size: 12,
+                                    weight: '600'
+                                }
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            padding: 12,
+                            titleFont: { size: 12, weight: '600' },
+                            bodyFont: { size: 12 },
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': Rp ' + new Intl.NumberFormat('id-ID').format(Math.round(context.parsed.y));
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            position: 'left',
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)',
+                                drawBorder: true
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return 'Rp ' + new Intl.NumberFormat('id-ID').format(value).substring(0, 20);
+                                },
+                                font: {
+                                    size: 11
+                                }
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false,
+                            },
+                            ticks: {
+                                font: {
+                                    size: 11
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        } else {
+            document.getElementById('chartTrend6Bulan').parentElement.parentElement.innerHTML = '<p style="text-align: center; color: #999; padding: 40px;">Belum ada data untuk 6 bulan terakhir</p>';
+        }
+    </script>
 </body>
 </html>

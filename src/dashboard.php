@@ -75,6 +75,30 @@ $stmt->bind_param("i", $user_id);
 $stmt->execute();
 $result_transaksi = $stmt->get_result();
 
+// Query chart arus kas 30 hari terakhir (pengeluaran only)
+$query_chart_30hari = "
+    SELECT 
+        DATE(tanggal) as tanggal,
+        SUM(CASE WHEN jenis = 'pengeluaran' THEN jumlah ELSE 0 END) as total_pengeluaran
+    FROM transaksi 
+    WHERE user_id = ? 
+    AND tanggal >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+    AND jenis = 'pengeluaran'
+    GROUP BY DATE(tanggal)
+    ORDER BY tanggal ASC
+";
+$stmt = $koneksi->prepare($query_chart_30hari);
+$stmt->bind_param("i", $user_id);
+$stmt->execute();
+$result_chart_30hari = $stmt->get_result();
+
+// Format data untuk Chart.js
+$chart_data_30hari = [];
+while ($row = $result_chart_30hari->fetch_assoc()) {
+    $chart_data_30hari[] = $row;
+}
+$json_chart_30hari = json_encode($chart_data_30hari);
+
 // Format currency
 function formatCurrency($value) {
     return 'Rp ' . number_format(abs($value), 0, ',', '.');
@@ -540,6 +564,7 @@ function formatCurrency($value) {
             }
         }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
 </head>
 <body>
     <div class="container">
@@ -674,8 +699,8 @@ function formatCurrency($value) {
             <div class="chart-section">
                 <h2 class="section-title">Arus Kas Real-time</h2>
                 <p class="section-subtitle">Statistik pengeluaran dana 30 hari terakhir</p>
-                <div class="chart-placeholder">
-                    📈 Chart akan ditampilkan di sini (gunakan Chart.js, Apex Charts, atau library serupa)
+                <div style="position: relative; height: 300px;">
+                    <canvas id="chartArusKas30Hari"></canvas>
                 </div>
             </div>
 
@@ -714,5 +739,99 @@ function formatCurrency($value) {
             </div>
         </div>
     </div>
+
+    <script>
+        // Chart Arus Kas 30 Hari Terakhir
+        const chartData30Hari = <?php echo $json_chart_30hari; ?>;
+        
+        if (chartData30Hari.length > 0) {
+            const labels = chartData30Hari.map(item => {
+                const date = new Date(item.tanggal);
+                return date.toLocaleDateString('id-ID', { month: 'short', day: 'numeric' });
+            });
+            const data = chartData30Hari.map(item => parseFloat(item.total_pengeluaran));
+            
+            const ctx = document.getElementById('chartArusKas30Hari').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Pengeluaran (Rp)',
+                        data: data,
+                        borderColor: '#FF6B6B',
+                        backgroundColor: 'rgba(255, 107, 107, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: '#FF6B6B',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointRadius: 5,
+                        pointHoverRadius: 7,
+                        pointHoverBackgroundColor: '#FF6B6B',
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                usePointStyle: true,
+                                padding: 20,
+                                font: {
+                                    size: 12,
+                                    weight: '600'
+                                }
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            padding: 12,
+                            titleFont: { size: 12, weight: '600' },
+                            bodyFont: { size: 12 },
+                            callbacks: {
+                                label: function(context) {
+                                    return 'Rp ' + new Intl.NumberFormat('id-ID').format(Math.round(context.parsed.y));
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)',
+                                drawBorder: true
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return 'Rp ' + new Intl.NumberFormat('id-ID').format(value).substring(0, 20);
+                                },
+                                font: {
+                                    size: 11
+                                }
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false,
+                            },
+                            ticks: {
+                                font: {
+                                    size: 11
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        } else {
+            document.getElementById('chartArusKas30Hari').parentElement.parentElement.innerHTML = '<p style="text-align: center; color: #999; padding: 40px;">Belum ada data pengeluaran untuk ditampilkan</p>';
+        }
+    </script>
 </body>
 </html>
